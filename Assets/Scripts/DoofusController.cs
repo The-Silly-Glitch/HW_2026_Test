@@ -12,13 +12,25 @@ public class DoofusController : MonoBehaviour
     [Tooltip("How far below the last known Pulpit height counts as 'fallen off'.")]
     public float fallDeathY = -10f;
 
+    [Tooltip("How fast Doofus visually turns to face his movement direction.")]
+    public float turnSpeed = 10f;
+
+    /// <summary>
+    /// True while there's active movement input this physics step.
+    /// Read by SlimeAnimationController to drive the Idle/Move blend -
+    /// kept here since this is the single source of truth for movement.
+    /// </summary>
+    public bool IsMoving { get; private set; }
+
     private Rigidbody rb;
     private float moveSpeed = 5f; // overwritten from JSON in Start()
 
     private void Awake()
     {
         rb = GetComponent<Rigidbody>();
-        rb.freezeRotation = true; // don't let Doofus topple over like a physics cube
+        // Freeze only the axes that would make Doofus topple over from physics
+        // collisions - leave Y (yaw) free so he can turn to face movement direction.
+        rb.constraints = RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationZ;
     }
 
     private void Start()
@@ -53,23 +65,37 @@ public class DoofusController : MonoBehaviour
 
     private void FixedUpdate()
     {
-    if (GameManager.Instance != null && GameManager.Instance.CurrentState != GameState.Playing)
-        return;
+        if (GameManager.Instance != null && GameManager.Instance.CurrentState != GameState.Playing)
+            return;
 
-    var kb = Keyboard.current;
-    if (kb == null) return; // no keyboard detected, edge case guard
+        // Works with both WASD and Arrow keys, using the new Input System
+        // directly (avoids depending on the project's Active Input Handling
+        // setting, which caused issues before).
+        var kb = Keyboard.current;
+        if (kb == null) return; // edge case: no keyboard device detected
 
-    float h = 0f, v = 0f;
-    if (kb.aKey.isPressed || kb.leftArrowKey.isPressed) h = -1f;
-    if (kb.dKey.isPressed || kb.rightArrowKey.isPressed) h = 1f;
-    if (kb.sKey.isPressed || kb.downArrowKey.isPressed) v = -1f;
-    if (kb.wKey.isPressed || kb.upArrowKey.isPressed) v = 1f;
+        float h = 0f, v = 0f;
+        if (kb.aKey.isPressed || kb.leftArrowKey.isPressed) h -= 1f;
+        if (kb.dKey.isPressed || kb.rightArrowKey.isPressed) h += 1f;
+        if (kb.sKey.isPressed || kb.downArrowKey.isPressed) v -= 1f;
+        if (kb.wKey.isPressed || kb.upArrowKey.isPressed) v += 1f;
 
-    Vector3 move = new Vector3(h, 0f, v);
-    if (move.sqrMagnitude > 1f) move.Normalize();
+        Vector3 move = new Vector3(h, 0f, v);
+        if (move.sqrMagnitude > 1f) move.Normalize(); // stop diagonal speed boost
 
-    Vector3 targetPos = rb.position + move * moveSpeed * Time.fixedDeltaTime;
-    rb.MovePosition(targetPos);
+        IsMoving = move.sqrMagnitude > 0.0001f;
+
+        Vector3 targetPos = rb.position + move * moveSpeed * Time.fixedDeltaTime;
+        rb.MovePosition(targetPos);
+
+        // Smoothly turn to face the direction Doofus is actually moving in.
+        // Skipped entirely when standing still so he doesn't snap to face
+        // some leftover direction while idle.
+        if (IsMoving)
+        {
+            Quaternion targetRotation = Quaternion.LookRotation(move, Vector3.up);
+            rb.MoveRotation(Quaternion.Slerp(rb.rotation, targetRotation, turnSpeed * Time.fixedDeltaTime));
+        }
     }
 
     private void OnCollisionEnter(Collision collision)
