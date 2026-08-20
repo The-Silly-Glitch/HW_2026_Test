@@ -126,5 +126,5 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Pulpit
   pulpitRenderer: {fileID: 7529401515319969608}
-  normalColor: {r: 0.1, g: 0.8, b: 0.2, a: 1}
+  normalColor: {r: 0, g: 0, b: 0, a: 1}
   warningColor: {r: 1, g: 0, b: 0, a: 1}
