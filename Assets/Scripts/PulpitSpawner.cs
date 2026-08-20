@@ -21,6 +21,14 @@ public class PulpitSpawner : MonoBehaviour
     private Vector3 lastDirection = Vector3.forward;
     private bool isRunning;
 
+    // --- Handles the case where a Pulpit hits its spawn-threshold while
+    // the cap (2) is still full because the other active Pulpit hasn't
+    // expired yet. Without this, that request would be silently dropped
+    // and no further Pulpit would ever spawn, since each Pulpit only
+    // requests once. ---
+    private bool hasPendingRequest;
+    private Vector3 pendingRequestPosition;
+
     private static readonly Vector3[] CardinalDirections =
     {
         Vector3.forward, Vector3.back, Vector3.left, Vector3.right
@@ -52,6 +60,7 @@ public class PulpitSpawner : MonoBehaviour
         }
         activePulpits.Clear();
         isRunning = false;
+        hasPendingRequest = false;
     }
 
     /// <summary>
@@ -62,11 +71,18 @@ public class PulpitSpawner : MonoBehaviour
     {
         if (!isRunning) return;
 
-        // --- Edge case: respect the "only two at once" rule even if
-        // something calls this more than expected. ---
-        if (activePulpits.Count >= maxConcurrentPulpits) return;
-
         Vector3 basePos = requester != null ? requester.transform.position : lastSpawnPosition;
+
+        // --- Edge case: respect the "only two at once" rule. If we're
+        // already full, don't drop this request - remember it so it can
+        // be fulfilled the instant a slot frees up (see NotifyPulpitExpired). ---
+        if (activePulpits.Count >= maxConcurrentPulpits)
+        {
+            hasPendingRequest = true;
+            pendingRequestPosition = basePos;
+            return;
+        }
+
         Vector3 nextPos = GetNextAdjacentPosition(basePos);
         SpawnPulpitAt(nextPos);
     }
@@ -74,6 +90,15 @@ public class PulpitSpawner : MonoBehaviour
     public void NotifyPulpitExpired(Pulpit pulpit)
     {
         activePulpits.Remove(pulpit);
+
+        // A slot just freed up - if some earlier Pulpit was blocked from
+        // spawning its successor because we were at capacity, fulfill it now.
+        if (hasPendingRequest && isRunning)
+        {
+            hasPendingRequest = false;
+            Vector3 nextPos = GetNextAdjacentPosition(pendingRequestPosition);
+            SpawnPulpitAt(nextPos);
+        }
     }
 
     private void SpawnPulpitAt(Vector3 position)
