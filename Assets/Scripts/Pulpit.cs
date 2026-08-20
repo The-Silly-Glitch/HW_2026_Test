@@ -10,7 +10,11 @@ public class Pulpit : MonoBehaviour
 {
     [Header("Visuals (optional)")]
     public Renderer pulpitRenderer;
-    public Color normalColor = new Color(0.1f, 0.8f, 0.2f); // green
+    
+    // Changed to white so the concrete texture shows exactly as it is initially.
+    public Color normalColor = Color.white; 
+    
+    // This will multiply with the concrete texture, acting as a red filter.
     public Color warningColor = Color.red;
 
     private float lifetime;          // total seconds this Pulpit will exist (y..z)
