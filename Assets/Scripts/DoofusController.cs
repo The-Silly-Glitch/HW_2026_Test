@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 /// <summary>
 /// Put this on the Doofus prefab (a Cube with a Rigidbody + BoxCollider).
@@ -52,19 +53,23 @@ public class DoofusController : MonoBehaviour
 
     private void FixedUpdate()
     {
-        if (GameManager.Instance != null && GameManager.Instance.CurrentState != GameState.Playing)
-            return;
+    if (GameManager.Instance != null && GameManager.Instance.CurrentState != GameState.Playing)
+        return;
 
-        // Works with both WASD and Arrow keys automatically -
-        // Unity's default "Horizontal"/"Vertical" axes map to both by default.
-        float h = Input.GetAxisRaw("Horizontal"); // A/D or Left/Right
-        float v = Input.GetAxisRaw("Vertical");   // W/S or Up/Down
+    var kb = Keyboard.current;
+    if (kb == null) return; // no keyboard detected, edge case guard
 
-        Vector3 move = new Vector3(h, 0f, v);
-        if (move.sqrMagnitude > 1f) move.Normalize(); // stop diagonal speed boost
+    float h = 0f, v = 0f;
+    if (kb.aKey.isPressed || kb.leftArrowKey.isPressed) h = -1f;
+    if (kb.dKey.isPressed || kb.rightArrowKey.isPressed) h = 1f;
+    if (kb.sKey.isPressed || kb.downArrowKey.isPressed) v = -1f;
+    if (kb.wKey.isPressed || kb.upArrowKey.isPressed) v = 1f;
 
-        Vector3 targetPos = rb.position + move * moveSpeed * Time.fixedDeltaTime;
-        rb.MovePosition(targetPos);
+    Vector3 move = new Vector3(h, 0f, v);
+    if (move.sqrMagnitude > 1f) move.Normalize();
+
+    Vector3 targetPos = rb.position + move * moveSpeed * Time.fixedDeltaTime;
+    rb.MovePosition(targetPos);
     }
 
     private void OnCollisionEnter(Collision collision)
