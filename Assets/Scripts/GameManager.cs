@@ -167,15 +167,28 @@ public class GameManager : MonoBehaviour
 
     private void RespawnDoofus()
     {
+        // Always respawn onto the FRESHEST active Pulpit, not necessarily
+        // the one Doofus was last standing on. If an older Pulpit (about
+        // to expire) and a newer one both exist, landing back on the old
+        // one gave almost no time to react before it died anyway - the
+        // newest Pulpit always gives the player a full, fair countdown.
+        Pulpit target = pulpitSpawner != null ? pulpitSpawner.GetLatestPulpit() : null;
+
         // --- Edge case: if for some reason there's no valid Pulpit or
         // Doofus instance to respawn (shouldn't normally happen), fail
         // gracefully into Game Over instead of soft-locking. ---
-        if (currentPulpit == null || currentDoofusInstance == null)
+        if (target == null || currentDoofusInstance == null)
         {
             Debug.LogWarning("[GameManager] No valid Pulpit/Doofus to respawn onto - ending game.");
             EndGame();
             return;
         }
+
+        currentPulpit = target;
+
+        // Any other Pulpit currently alive is now stale relative to this
+        // respawn - clear it so the player only has one thing to focus on.
+        if (pulpitSpawner != null) pulpitSpawner.ClearAllExcept(target);
 
         CurrentState = GameState.Respawning;
         currentPulpit.Freeze(); // pause its countdown while Doofus is away

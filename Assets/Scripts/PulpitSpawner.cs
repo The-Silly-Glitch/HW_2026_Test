@@ -102,6 +102,36 @@ public class PulpitSpawner : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Returns the most recently spawned still-active Pulpit (last one
+    /// added to the list, since Pulpits are always appended in spawn
+    /// order). Used by GameManager as the respawn target - the freshest
+    /// Pulpit always gives the player the most time to react.
+    /// </summary>
+    public Pulpit GetLatestPulpit()
+    {
+        if (activePulpits.Count == 0) return null;
+        return activePulpits[activePulpits.Count - 1];
+    }
+
+    /// <summary>
+    /// Force-expires every active Pulpit except the one given. Called
+    /// right before a respawn so the player only ever has ONE Pulpit to
+    /// worry about landing back on - no more accidentally respawning onto
+    /// a stale, about-to-expire Pulpit while a fresher one sits unused.
+    /// </summary>
+    public void ClearAllExcept(Pulpit keep)
+    {
+        // Snapshot first: Pulpit.Expire() calls back into NotifyPulpitExpired()
+        // above, which mutates activePulpits - can't safely iterate the live list.
+        var snapshot = new List<Pulpit>(activePulpits);
+        foreach (var p in snapshot)
+        {
+            if (p == null || p == keep) continue;
+            p.Expire();
+        }
+    }
+
     private void SpawnNextFrom(Vector3 basePos, Vector3 excludeDirection)
     {
         Vector3 chosenDirection = PickDirection(basePos, excludeDirection);

@@ -105,7 +105,13 @@ public class Pulpit : MonoBehaviour
         if (pulpitRenderer != null) pulpitRenderer.material.color = normalColor;
     }
 
-    private void Expire()
+    /// <summary>
+    /// Immediately ends this Pulpit's life, regardless of remaining time.
+    /// Normally called internally when the countdown hits zero, but also
+    /// called externally by PulpitSpawner.ClearAllExcept() to force-remove
+    /// any stale Pulpits when Doofus respawns onto the freshest one.
+    /// </summary>
+    public void Expire()
     {
         if (isDestroyed) return;
         isDestroyed = true;
