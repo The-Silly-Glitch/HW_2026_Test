@@ -10,11 +10,7 @@ public class Pulpit : MonoBehaviour
 {
     [Header("Visuals (optional)")]
     public Renderer pulpitRenderer;
-    
-    // Changed to white so the concrete texture shows exactly as it is initially.
-    public Color normalColor = Color.white; 
-    
-    // This will multiply with the concrete texture, acting as a red filter.
+    public Color normalColor = new Color(0.1f, 0.8f, 0.2f); // green
     public Color warningColor = Color.red;
 
     private float lifetime;          // total seconds this Pulpit will exist (y..z)
@@ -23,6 +19,7 @@ public class Pulpit : MonoBehaviour
     private bool hasNotifiedSpawner;
     private bool hasBeenScored;
     private bool isDestroyed;
+    private bool isFrozen; // true while Doofus is mid-respawn onto this Pulpit - countdown paused
 
     private PulpitSpawner ownerSpawner;
     private Collider col;
@@ -61,7 +58,7 @@ public class Pulpit : MonoBehaviour
 
     private void Update()
     {
-        if (isDestroyed) return;
+        if (isDestroyed || isFrozen) return;
 
         remaining -= Time.deltaTime;
 
@@ -84,6 +81,30 @@ public class Pulpit : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Pauses this Pulpit's countdown. Called by GameManager the moment
+    /// Doofus falls off it, so it can't expire out from under him while
+    /// he's mid-air being respawned back onto it.
+    /// </summary>
+    public void Freeze()
+    {
+        isFrozen = true;
+    }
+
+    /// <summary>
+    /// Restarts this Pulpit's timer from a fresh full lifetime and
+    /// resumes counting down. Called once Doofus successfully lands back
+    /// on it after a respawn.
+    /// </summary>
+    public void ResetTimerAndUnfreeze()
+    {
+        remaining = lifetime;
+        hasNotifiedSpawner = false;
+        isFrozen = false;
+
+        if (pulpitRenderer != null) pulpitRenderer.material.color = normalColor;
+    }
+
     private void Expire()
     {
         if (isDestroyed) return;
@@ -101,20 +122,29 @@ public class Pulpit : MonoBehaviour
 
     private void OnCollisionEnter(Collision collision)
     {
-        TryScore(collision.collider);
+        HandleDoofusContact(collision.collider);
     }
 
     private void OnTriggerEnter(Collider other)
     {
-        TryScore(other);
+        HandleDoofusContact(other);
     }
 
-    private void TryScore(Collider other)
+    private void HandleDoofusContact(Collider other)
     {
-        if (hasBeenScored || isDestroyed) return;
+        if (isDestroyed) return;
         if (!other.CompareTag("Doofus")) return;
 
-        hasBeenScored = true;
-        GameManager.Instance?.AddScore(1);
+        // Always let GameManager know Doofus is standing here - this is
+        // what makes respawning possible (it needs to know the last
+        // Pulpit actually touched) and also handles restoring control
+        // once he lands back after falling.
+        GameManager.Instance?.NotifyDoofusLanded(this);
+
+        if (!hasBeenScored)
+        {
+            hasBeenScored = true;
+            GameManager.Instance?.AddScore(1);
+        }
     }
 }

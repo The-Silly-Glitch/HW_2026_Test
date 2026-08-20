@@ -39,13 +39,13 @@ public class PulpitSpawner : MonoBehaviour
     /// Called once by GameManager.StartGame(). Spawns the very first
     /// Pulpit under Doofus's feet, then lets the chain reaction begin.
     /// </summary>
-    public void BeginSpawning(Vector3 startPosition)
+    public Pulpit BeginSpawning(Vector3 startPosition)
     {
         ResetSpawner();
         isRunning = true;
 
         lastSpawnPosition = startPosition;
-        SpawnPulpitAt(lastSpawnPosition, Vector3.zero); // no predecessor, so no incoming direction
+        return SpawnPulpitAt(lastSpawnPosition, Vector3.zero); // no predecessor, so no incoming direction
     }
 
     public void StopAllPulpits()
@@ -109,12 +109,12 @@ public class PulpitSpawner : MonoBehaviour
         SpawnPulpitAt(nextPos, chosenDirection);
     }
 
-    private void SpawnPulpitAt(Vector3 position, Vector3 directionUsed)
+    private Pulpit SpawnPulpitAt(Vector3 position, Vector3 directionUsed)
     {
         if (pulpitPrefab == null)
         {
             Debug.LogError("[PulpitSpawner] pulpitPrefab not assigned in Inspector.");
-            return;
+            return null;
         }
 
         GameObject go = Instantiate(pulpitPrefab, position, Quaternion.identity);
@@ -123,23 +123,24 @@ public class PulpitSpawner : MonoBehaviour
         {
             Debug.LogError("[PulpitSpawner] pulpitPrefab has no Pulpit component attached.");
             Destroy(go);
-            return;
+            return null;
         }
 
         DoofusDiaryData diary = GameManager.Instance != null ? GameManager.Instance.DiaryData : null;
         float minLife = diary != null ? diary.minPulpitLifetime : 3f;
         float maxLife = diary != null ? diary.maxPulpitLifetime : 6f;
+        // Fixed, JSON-driven threshold - "x" seconds remaining triggers the next spawn.
+        float spawnThreshold = diary != null ? diary.spawnThresholdSeconds : 1.5f;
 
         float lifetime = Random.Range(minLife, maxLife);
-        
-        // Set the threshold to exactly 1.5 seconds instead of a random value.
-        float spawnThreshold = 1.5f; 
 
         pulpit.Initialize(this, lifetime, spawnThreshold, directionUsed);
 
         activePulpits.Add(pulpit);
         lastSpawnPosition = position;
         lastDirection = directionUsed;
+
+        return pulpit;
     }
 
     /// <summary>

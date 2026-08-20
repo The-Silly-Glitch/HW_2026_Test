@@ -11,6 +11,7 @@ public class DoofusDiaryData
     public float doofusSpeed;         // units/second Doofus moves at
     public float minPulpitLifetime;   // y - minimum seconds a Pulpit survives
     public float maxPulpitLifetime;   // z - maximum seconds a Pulpit survives
+    public float spawnThresholdSeconds; // x - fixed "seconds remaining" trigger for spawning the next Pulpit
 }
 
 /// <summary>
@@ -28,7 +29,8 @@ public static class DoofusDiaryLoader
     {
         doofusSpeed = 5f,
         minPulpitLifetime = 3f,
-        maxPulpitLifetime = 6f
+        maxPulpitLifetime = 6f,
+        spawnThresholdSeconds = 1.5f
     };
 
     public static DoofusDiaryData Load()
@@ -76,6 +78,12 @@ public static class DoofusDiaryLoader
         {
             Debug.LogWarning("[DoofusDiaryLoader] maxPulpitLifetime < minPulpitLifetime in JSON, swapping/fixing.");
             data.maxPulpitLifetime = data.minPulpitLifetime + 1f;
+        }
+
+        if (data.spawnThresholdSeconds <= 0f)
+        {
+            Debug.LogWarning("[DoofusDiaryLoader] spawnThresholdSeconds <= 0 in JSON, clamping to fallback.");
+            data.spawnThresholdSeconds = Fallback.spawnThresholdSeconds;
         }
 
         return data;

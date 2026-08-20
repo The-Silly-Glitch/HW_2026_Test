@@ -1,5 +1,6 @@
 {
   "doofusSpeed": 5.0,
   "minPulpitLifetime": 3.0,
-  "maxPulpitLifetime": 6.0
+  "maxPulpitLifetime": 6.0,
+  "spawnThresholdSeconds": 1.5
 }

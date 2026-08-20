@@ -58,7 +58,7 @@ public class DoofusController : MonoBehaviour
         // or the Pulpit he was standing on was destroyed), end the game.
         if (transform.position.y < fallDeathY)
         {
-            if (GameManager.Instance != null) GameManager.Instance.EndGame();
+            if (GameManager.Instance != null) GameManager.Instance.HandleDoofusFell();
             return;
         }
     }
@@ -104,7 +104,7 @@ public class DoofusController : MonoBehaviour
         // trigger volume placed well below the Pulpits (see the guide).
         if (collision.collider.CompareTag("DeathZone"))
         {
-            if (GameManager.Instance != null) GameManager.Instance.EndGame();
+            if (GameManager.Instance != null) GameManager.Instance.HandleDoofusFell();
         }
     }
 
@@ -112,7 +112,21 @@ public class DoofusController : MonoBehaviour
     {
         if (other.CompareTag("DeathZone"))
         {
-            if (GameManager.Instance != null) GameManager.Instance.EndGame();
+            if (GameManager.Instance != null) GameManager.Instance.HandleDoofusFell();
         }
+    }
+
+    /// <summary>
+    /// Instantly repositions Doofus (used by GameManager's respawn
+    /// sequence: teleport high above the target Pulpit, then let gravity
+    /// pull him down onto it for the "falls from the sky" effect).
+    /// Zeroes velocity first so momentum from the fall doesn't carry over.
+    /// </summary>
+    public void TeleportTo(Vector3 position)
+    {
+        rb.linearVelocity = Vector3.zero;
+        rb.angularVelocity = Vector3.zero;
+        rb.position = position;
+        transform.position = position;
     }
 }
