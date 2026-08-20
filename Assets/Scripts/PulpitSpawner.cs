@@ -131,9 +131,9 @@ public class PulpitSpawner : MonoBehaviour
         float maxLife = diary != null ? diary.maxPulpitLifetime : 6f;
 
         float lifetime = Random.Range(minLife, maxLife);
-        // Per the brief: "x is a random number between y and z seconds" -
-        // the spawn-ahead threshold is itself randomized within the same range.
-        float spawnThreshold = Random.Range(minLife, maxLife);
+        
+        // Set the threshold to exactly 1.5 seconds instead of a random value.
+        float spawnThreshold = 1.5f; 
 
         pulpit.Initialize(this, lifetime, spawnThreshold, directionUsed);
 
