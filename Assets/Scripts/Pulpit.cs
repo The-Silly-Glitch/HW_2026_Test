@@ -23,6 +23,14 @@ public class Pulpit : MonoBehaviour
     private PulpitSpawner ownerSpawner;
     private Collider col;
 
+    /// <summary>
+    /// Direction (in world space) from the previous Pulpit to this one.
+    /// Used by PulpitSpawner to avoid spawning the *next* Pulpit straight
+    /// back onto the position this one came from. Vector3.zero for the
+    /// very first Pulpit, which has no predecessor.
+    /// </summary>
+    public Vector3 IncomingDirection { get; private set; } = Vector3.zero;
+
     private void Awake()
     {
         col = GetComponent<Collider>();
@@ -33,9 +41,10 @@ public class Pulpit : MonoBehaviour
     /// Called by PulpitSpawner right after Instantiate to configure this
     /// Pulpit's lifespan using values derived from the JSON-driven diary data.
     /// </summary>
-    public void Initialize(PulpitSpawner spawner, float lifetimeSeconds, float spawnThresholdSeconds)
+    public void Initialize(PulpitSpawner spawner, float lifetimeSeconds, float spawnThresholdSeconds, Vector3 incomingDirection)
     {
         ownerSpawner = spawner;
+        IncomingDirection = incomingDirection;
         lifetime = Mathf.Max(0.1f, lifetimeSeconds); // guard against 0/negative values
         remaining = lifetime;
 

@@ -26,6 +26,7 @@ public class GameManager : MonoBehaviour
     public PulpitSpawner pulpitSpawner;
     public Transform doofusStartPosition; // empty GameObject marking spawn point
     public GameObject doofusPrefab;
+    public CameraFollow cameraFollow; // optional - drag Main Camera here if using camera-follow
 
     private GameObject currentDoofusInstance;
 
@@ -55,6 +56,7 @@ public class GameManager : MonoBehaviour
 
         if (pulpitSpawner != null) pulpitSpawner.StopAllPulpits();
         if (currentDoofusInstance != null) Destroy(currentDoofusInstance);
+        if (cameraFollow != null) cameraFollow.ClearTarget();
 
         if (uiManager != null) uiManager.ShowStartScreen();
     }
@@ -70,6 +72,7 @@ public class GameManager : MonoBehaviour
         if (doofusPrefab != null && doofusStartPosition != null)
         {
             currentDoofusInstance = Instantiate(doofusPrefab, doofusStartPosition.position, Quaternion.identity);
+            if (cameraFollow != null) cameraFollow.SetTarget(currentDoofusInstance.transform);
         }
         else
         {

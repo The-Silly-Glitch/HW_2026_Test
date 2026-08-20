@@ -28,6 +28,7 @@ public class PulpitSpawner : MonoBehaviour
     // requests once. ---
     private bool hasPendingRequest;
     private Vector3 pendingRequestPosition;
+    private Vector3 pendingExcludeDirection;
 
     private static readonly Vector3[] CardinalDirections =
     {
@@ -44,7 +45,7 @@ public class PulpitSpawner : MonoBehaviour
         isRunning = true;
 
         lastSpawnPosition = startPosition;
-        SpawnPulpitAt(lastSpawnPosition);
+        SpawnPulpitAt(lastSpawnPosition, Vector3.zero); // no predecessor, so no incoming direction
     }
 
     public void StopAllPulpits()
@@ -72,6 +73,7 @@ public class PulpitSpawner : MonoBehaviour
         if (!isRunning) return;
 
         Vector3 basePos = requester != null ? requester.transform.position : lastSpawnPosition;
+        Vector3 excludeDirection = requester != null ? requester.IncomingDirection : Vector3.zero;
 
         // --- Edge case: respect the "only two at once" rule. If we're
         // already full, don't drop this request - remember it so it can
@@ -80,11 +82,11 @@ public class PulpitSpawner : MonoBehaviour
         {
             hasPendingRequest = true;
             pendingRequestPosition = basePos;
+            pendingExcludeDirection = excludeDirection;
             return;
         }
 
-        Vector3 nextPos = GetNextAdjacentPosition(basePos);
-        SpawnPulpitAt(nextPos);
+        SpawnNextFrom(basePos, excludeDirection);
     }
 
     public void NotifyPulpitExpired(Pulpit pulpit)
@@ -96,12 +98,18 @@ public class PulpitSpawner : MonoBehaviour
         if (hasPendingRequest && isRunning)
         {
             hasPendingRequest = false;
-            Vector3 nextPos = GetNextAdjacentPosition(pendingRequestPosition);
-            SpawnPulpitAt(nextPos);
+            SpawnNextFrom(pendingRequestPosition, pendingExcludeDirection);
         }
     }
 
-    private void SpawnPulpitAt(Vector3 position)
+    private void SpawnNextFrom(Vector3 basePos, Vector3 excludeDirection)
+    {
+        Vector3 chosenDirection = PickDirection(basePos, excludeDirection);
+        Vector3 nextPos = basePos + chosenDirection * pulpitSize;
+        SpawnPulpitAt(nextPos, chosenDirection);
+    }
+
+    private void SpawnPulpitAt(Vector3 position, Vector3 directionUsed)
     {
         if (pulpitPrefab == null)
         {
@@ -127,30 +135,58 @@ public class PulpitSpawner : MonoBehaviour
         // the spawn-ahead threshold is itself randomized within the same range.
         float spawnThreshold = Random.Range(minLife, maxLife);
 
-        pulpit.Initialize(this, lifetime, spawnThreshold);
+        pulpit.Initialize(this, lifetime, spawnThreshold, directionUsed);
 
         activePulpits.Add(pulpit);
         lastSpawnPosition = position;
+        lastDirection = directionUsed;
     }
 
-    private Vector3 GetNextAdjacentPosition(Vector3 fromPosition)
+    /// <summary>
+    /// Picks a cardinal direction for the next Pulpit, given the position
+    /// it's spawning from and the direction that led INTO that position
+    /// (so we can exclude going straight back the way we came - this is
+    /// what stops a new Pulpit landing on the previous Pulpit's old spot).
+    /// Also avoids landing on any currently-active Pulpit as a backup check.
+    /// </summary>
+    private Vector3 PickDirection(Vector3 fromPosition, Vector3 excludeDirection)
     {
-        // Try a handful of random directions; avoid re-using the exact
-        // same spot as any currently active Pulpit ("not in the same position").
-        for (int attempt = 0; attempt < 8; attempt++)
-        {
-            Vector3 dir = CardinalDirections[Random.Range(0, CardinalDirections.Length)];
-            Vector3 candidate = fromPosition + dir * pulpitSize;
+        Vector3 reverseOfExclude = -excludeDirection;
 
-            if (!IsPositionOccupied(candidate))
+        List<Vector3> candidates = new List<Vector3>();
+        foreach (var dir in CardinalDirections)
+        {
+            // Skip the direction that would take us straight back to
+            // where this Pulpit's predecessor was.
+            if (excludeDirection != Vector3.zero && Vector3.Distance(dir, reverseOfExclude) < 0.01f)
+                continue;
+
+            Vector3 candidatePos = fromPosition + dir * pulpitSize;
+            if (IsPositionOccupied(candidatePos)) continue;
+
+            candidates.Add(dir);
+        }
+
+        // --- Edge case: if every direction got filtered out (shouldn't
+        // normally happen with 4 directions and only 1-2 active Pulpits),
+        // fall back to allowing the exclusion rule to be broken rather
+        // than getting stuck with no candidates at all. ---
+        if (candidates.Count == 0)
+        {
+            foreach (var dir in CardinalDirections)
             {
-                lastDirection = dir;
-                return candidate;
+                Vector3 candidatePos = fromPosition + dir * pulpitSize;
+                if (!IsPositionOccupied(candidatePos)) candidates.Add(dir);
             }
         }
 
-        // Fallback: nudge slightly so we never get stuck in an infinite loop.
-        return fromPosition + lastDirection * pulpitSize + Vector3.right * 0.01f;
+        if (candidates.Count == 0)
+        {
+            // Absolute last resort - everything is somehow occupied.
+            return lastDirection;
+        }
+
+        return candidates[Random.Range(0, candidates.Count)];
     }
 
     private bool IsPositionOccupied(Vector3 candidate)
