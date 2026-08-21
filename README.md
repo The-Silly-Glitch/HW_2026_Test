@@ -1,15 +1,12 @@
 # Doofus Adventure Game
 
-Submission for the **Hitwicket Game Developer Assignment (VIT 2026)**.
+Assignment submission for the **Hitwicket Game Developer Assignment (VIT 2026)**.
 
-A Crossy-Road-style survival game: guide Doofus (a slime) across an endless,
-disappearing chain of platforms ("Pulpits") for as long as you can.
+This is a Crossy Road-style survival game where you must help Doofus (the slime)
+survive by crossing an endless series of disappearing platforms called "Pulpits".
 
-**Author:** <your name>
-**Engine:** Unity 6 (6000.x), Built-in Render Pipeline (URP shaders)
-**Repo:** `HW_2026_Test`
 
----
+**Engine:** Unity 6.3 (6000.3.21f1), Universal 3D
 
 ## Gameplay preview
 
@@ -44,38 +41,32 @@ Movement only — no jump, by design (matches the brief exactly).
 
 ---
 
-## Features implemented
+## Implemented Features
 
-### Level 1 — Movement + JSON-driven Pulpit placement
-- Doofus moves continuously in 4 directions at a speed read entirely from
-  `doofus_diary.json` — nothing gameplay-related is hardcoded.
-- Only **2 Pulpits** ever exist at once. A new one spawns adjacent to the
-  active one once its remaining time drops to the JSON-configured
-  threshold, and it's guaranteed to never spawn back on top of any prior
-  Pulpit in the chain (not just the currently-alive one).
-- Doofus visually turns to face his movement direction.
+### Level 1 – Movement + JSON-driven Pulpit placement
+- Doofus' movement occurs continuously in 4 directions with the speed
+  fully taken from `doofus_diary.json` – no gameplay elements are
+  hardcoded at all.
+- There are always **2 Pulpits** only. The next one spawns nearby the
+  current one when its timer reaches the JSON-defined threshold and it
+  can never respawn back on top of previous Pulpits (including current).
+- Doofus' sprite changes its orientation to match the direction of
+  movement.
+### Level 2 – Scoring
+- +1 point per each newly landed **Pulpit**.
+- The scoring system protects from accidental double scoring on the
+  same Pulpit from standing still on it over several frames.
 
-### Level 2 — Scoring
-- +1 score for every **new** Pulpit successfully landed on.
-- Scoring is guarded against double-counting while standing still on the
-  same Pulpit across multiple frames.
+### Level 3 – Start Screen + Game Over Screen
+- Menu flow complete: **Start → Playing → (Pause) → Game Over → Restart**.
+- **Exit** option available from the Start, Pause, and Game Over menus.
 
-### Level 3 — Start Screen + Game Over Screen
-- Full menu flow: **Start → Playing → (Pause) → Game Over → Restart**.
-- **Exit** button available from the Start, Pause, and Game Over screens.
-
-### Beyond the brief — extra polish
-- **Pause/Resume:** pressing `Esc` freezes the game (physics, Pulpit
-  timers, and input all pause together) and shows a Resume panel.
-- **3 Lives + fair respawn system:** falling costs a life instead of
-  ending the run immediately. Doofus teleports high into the sky and
-  free-falls back down, landing dead-center on the **freshest** active
-  Pulpit — any older, about-to-expire Pulpit is cleared first, and the
-  landing Pulpit's timer restarts fully, so every respawn is fair
-  regardless of which Pulpit he fell from.
-- **Camera follow:** smooth third-person camera trailing Doofus.
-- **Animated character:** Doofus is a rigged, animated slime (Idle /
-  Idle-break / Move), replacing the original placeholder cube.
+### Further polishing beyond the brief
+- **Pause/Resume**: tapping `Esc` pauses everything (physics, Pulpit timers,
+  and input) and displays a Resume button.
+- **3 Lives + fair respawn system**: falling off causes loss of a life rather than an instant game-over. The character gets teleported up to the top of the sky and lands right into the middle of the **fresh** Pulpit; any outdated and expiring Pulpit is removed, and then the timer on the landing Pulpit is reset fully, making every respawn a fair one regardless of which Pulpit Doofus fell from.
+- **Following camera**: smooth third-person camera following Doofus.
+- **Animated character**: Doofus is an animated, rigged slime character (Idle / Idle-break / Move).
 
 ---
 
@@ -110,46 +101,38 @@ safe defaults on missing/malformed/negative values) rather than crashing.
 | `CameraFollow.cs` | Smooth third-person camera tracking |
 | `UIManager.cs` | Start / HUD / Pause / Game Over screens |
 
-Each script owns exactly one responsibility, communicating through a small
-set of public methods rather than reaching into each other's internals —
-kept deliberately modular so any one piece (e.g. swapping the spawn rule,
-or the animation set) can change without rippling through the rest.
-
+Each script has only one responsibility to accomplish using a few public methods of communication, not by accessing each other’s inner workings. This design is done in a purposefully modular way, which allows for each component to be modified independently from the others (for example, the spawning rule or animations).
 ---
 
-## Design decisions & assumptions
+## Design decisions and assumptions
 
-A few points in the brief were ambiguous. Documented here so the reasoning
-is explicit rather than buried in a comment somewhere:
+Some items in the brief were a bit unclear. Documented below so the rationale
+is clear, instead of left in a comment somewhere:
 
-- **"x is a random number between y and z seconds"** — interpreted as a
-  fixed, JSON-configurable threshold (`spawnThresholdSeconds`) rather than
-  re-randomized per Pulpit, since a predictable trigger point made for
-  more consistent, testable pacing. Still fully config-driven, not
-  hardcoded.
-- **"Not in the same position as the previous one"** — implemented as the
-  stronger interpretation: a new Pulpit can never spawn on the position of
-  *any* prior Pulpit in the chain (not just the currently-alive one), so
-  the path always progresses outward instead of ever doubling back.
-- **Respawn targeting** (own addition, not in the original brief): when two
-  Pulpits are alive and Doofus falls, he always respawns onto the **most
-  recently spawned** one, with any other Pulpit force-cleared. Respawning
-  onto whichever one he happened to touch last could put him right back
-  onto a Pulpit seconds from expiring, which felt unfair.
+- **"x is a random number between y and z seconds"** - taken to mean that
+  there was a set, configurable threshold (`spawnThresholdSeconds`), not
+  a random one every time. This makes it more consistent and predictable.
+  Still totally configurable.
+- **"Not in the same position as the previous one"** - taken to mean the
+  stronger version: no Pulpit can spawn in the same place as any previously
+  spawned Pulpit in the series (not just the currently active one).
+- **Respawning onto the correct Pulpit** (own idea, not in the original
+  brief) - if there are two Pulpits and Doofus dies, he will respawn onto the
+  **most recent one**, while the other is forcefully cleared out. Respawning
+  randomly could lead to respawn onto a Pulpit about to expire, which doesn't
+  seem fair.
 
 ---
 
 ## Known edge cases handled
 
-- Missing, malformed, or out-of-range JSON values fall back to safe
-  defaults with a logged warning instead of crashing.
-- A Pulpit whose "spawn next" request arrives while both concurrent slots
-  are full is queued and fulfilled the instant a slot frees up, instead of
-  being silently dropped (an early race-condition bug, since fixed).
-- Falling triggers a life loss and respawn while lives remain; only hits
-  full Game Over at 0 lives.
-- Respawn/Game Over/Pause transitions are all guarded against duplicate
-  triggers (e.g. falling twice in one frame, pressing Esc mid-transition).
+- Invalid JSON values default to safe values and log warnings without crashing.
+- A Pulpit with its “spawn next” request issued when both concurrent slots
+  are busy will be added to the queue and satisfied immediately once a slot
+  becomes available, rather than ignored (a previous race-condition issue,
+  now fixed).
+- Falling causes loss of life and respawn if lives exist, else Game Over at 0 lives.
+- Transitions between respawn, Game Over, and Pause states cannot be triggered multiple times.
 
 ---
 
