@@ -1,4 +1,4 @@
-# Doofus Adventure Game
+# Run Doofus Game
 
 Assignment submission for the **Hitwicket Game Developer Assignment (VIT 2026)**.
 
