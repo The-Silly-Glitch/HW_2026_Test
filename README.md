@@ -18,6 +18,12 @@ survive by crossing an endless series of disappearing platforms called "Pulpits"
 
 ---
 
+## Gameplay Video
+
+You can watch the full gameplay here: [https://youtu.be/0h_Nd6YCm5E](https://youtu.be/0h_Nd6YCm5E)
+
+---
+
 ## How to run
 
 1. Open the project folder in Unity Hub (Unity 6+).
